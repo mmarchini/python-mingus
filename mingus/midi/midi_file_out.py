@@ -135,8 +135,11 @@ def write_Composition(file, composition, bpm=120, repeat=0, verbose=False):
         t += [MidiTrack(bpm)]
     m.tracks = t
     while repeat >= 0:
-        for i in range(len(composition.tracks)):
-            m.tracks[i].play_Track(composition.tracks[i])
+        for i, track in enumerate(composition.tracks):
+            m.tracks[i].change_instrument = True
+            m.tracks[i].instrument = track.instrument
+            m.tracks[i].channel = track.channel
+            m.tracks[i].play_Track(track)
         repeat -= 1
     return m.write_file(file, verbose)
 
@@ -167,4 +170,3 @@ if __name__ == '__main__':
     write_Bar('test3.mid', b, 200)
     write_Bar('test4.mid', b2, 200, 2)
     write_Track('test5.mid', t, 120)
-
