@@ -25,11 +25,13 @@ http://www.sonicspot.com/guide/midifiles.html
 """
 
 from binascii import a2b_hex
-from struct import pack, unpack
+from struct import pack
 from math import log
-from midi_events import *
+from midi_events import TRACK_HEADER, NOTE_ON, NOTE_OFF, BANK_SELECT
+from midi_events import CONTROLLER, PROGRAM_CHANGE, META_EVENT, SET_TEMPO
+from midi_events import TIME_SIGNATURE, KEY_SIGNATURE, TRACK_NAME
 from mingus.core.keys import Key, major_keys, minor_keys
-from mingus.containers.note import Note
+
 
 class MidiTrack(object):
 
@@ -42,6 +44,7 @@ class MidiTrack(object):
     bpm = 120
     change_instrument = False
     instrument = 1
+    channel = 1
 
     def __init__(self, start_bpm=120):
         self.track_data = ''
@@ -59,7 +62,7 @@ class MidiTrack(object):
         same goes for Note.velocity.
         """
         velocity = 64
-        channel = 1
+        channel = self.channel
         if hasattr(note, 'dynamics'):
             if 'velocity' in note.dynamics:
                 velocity = note.dynamics['velocity']
@@ -125,7 +128,7 @@ class MidiTrack(object):
     def stop_Note(self, note):
         """Add a note_off event for note to event_track."""
         velocity = 64
-        channel = 1
+        channel = self.channel
         if hasattr(note, 'dynamics'):
             if 'velocity' in note.dynamics:
                 velocity = note.dynamics['velocity']
@@ -162,7 +165,7 @@ class MidiTrack(object):
         using get_midi_data).
         """
         chunk_size = a2b_hex('%08x' % (len(self.track_data)
-                              + len(self.end_of_track())))
+                             + len(self.end_of_track())))
         return TRACK_HEADER + chunk_size
 
     def get_midi_data(self):
@@ -237,7 +240,7 @@ class MidiTrack(object):
         numer = a2b_hex('%02x' % meter[0])
         denom = a2b_hex('%02x' % int(log(meter[1], 2)))
         return self.delta_time + META_EVENT + TIME_SIGNATURE + '\x04' + numer\
-             + denom + '\x18\x08'
+            + denom + '\x18\x08'
 
     def set_key(self, key='C'):
         """Add a key signature event to the track_data."""
@@ -257,7 +260,7 @@ class MidiTrack(object):
             val = 256 + val
         key = a2b_hex('%02x' % val)
         return '{0}{1}{2}\x02{3}{4}'.format(self.delta_time, META_EVENT,
-                KEY_SIGNATURE, key, mode)
+                                            KEY_SIGNATURE, key, mode)
 
     def set_track_name(self, name):
         """Add a meta event for the track."""
@@ -287,4 +290,3 @@ class MidiTrack(object):
         for i in range(len(bytes) - 1):
             bytes[i] = bytes[i] | 0x80
         return pack('%sB' % len(bytes), *bytes)
-
